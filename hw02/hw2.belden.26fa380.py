@@ -9,7 +9,7 @@ def readFile(file):
         print("error: file is not valid or non-existent")
         return None
 
-def getPointsPLY(file, start, offset):
+def getPoints(file, start, offset):
     
     header = True
     vertex = 0
@@ -60,8 +60,10 @@ def pusherman(file, subMatrix):
 # Stanford bunny, extract x, y, z coordinates from bun_zipper.ply file, point location within a base + offset specified by user
 # place data into a (3, n) numpy matrix -> first row-x, second row-y, third row-z / first col-p1, second col-p2, ..., n col-p(n)
 jon_the_bunny = readFile("bun_zipper.ply")
-extracting_jon_poor_jon = getPointsPLY(jon_the_bunny, 30000, 5)
+extracting_jon_poor_jon = getPoints(jon_the_bunny, 30000, 5)
 pusherman("bunny.X", extracting_jon_poor_jon)
+
+
 
 
 
