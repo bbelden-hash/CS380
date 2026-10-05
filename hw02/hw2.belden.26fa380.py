@@ -154,7 +154,23 @@ def getATOM(file, start, offset, name):
             currATOM += 1
 
     return atoms
-    
+
+def savePDB(file):
+
+    with open(file, 'r') as source, open('1GCN.X', 'w') as destination:
+        destination.write("Glucagon, 1GCN.pdb; Point Cloud ->\n\n")
+
+        for line in source:
+
+            sourceLine = line.split()
+            if sourceLine[0] == "ATOM":
+
+                for word in sourceLine:
+                    destination.write(word)
+                    destination.write(" ")
+            
+                destination.write("\n")
+
 def printPDB(subMatrix):
     print("\n")
     print("ATOM sub-matrix:")
@@ -186,15 +202,12 @@ pusherman1("bunny.X", extracting_jon_poor_jon)
 
 # Write a function to read the atoms of a PDB format into a column-major data matrix,
 # using the ATOM and HETATM lines (lec09)
-# Use this function to extract the 5 points of 1GCN.pdb starting at 100th point and write this submatrix to ’1GCN.X'
-
-# REMARK   3   PROTEIN ATOMS            : 246                                     
-# REMARK   3   NUCLEIC ACID ATOMS       : 0                                       
-# REMARK   3   HETEROGEN ATOMS          : 0                                       
-# REMARK   3   SOLVENT ATOMS            : 0          
+# Use this function to extract the 5 points of 1GCN.pdb starting at 100th point and write this submatrix to ’1GCN.X' 
 billy_the_glucagon = readFile("1GCN.pdb")
+savePDB("1GCN.pdb")
 grabbing_billys_ATOMS = getATOM(billy_the_glucagon, 99, 5, "1GCN.pdb")
 printPDB(grabbing_billys_ATOMS)
+
 
 
 
