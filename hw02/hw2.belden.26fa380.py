@@ -1,4 +1,5 @@
 import numpy as np 
+import math
 
 def readFile(file):
     try:
@@ -155,6 +156,105 @@ def getATOM(file, start, offset, name):
 
     return atoms
 
+def meanBunny(file):
+
+    sumX = 0
+    sumY = 0
+    sumZ = 0
+    num = 0
+
+    header = True
+
+    for line in file:
+
+        if header:
+            if line.strip() == "end_header":
+                header = False
+            continue
+
+        coordinates = line.split()
+        if float(coordinates[0]) == 3:
+            break
+        else:
+            x = float(coordinates[0])
+            y = float(coordinates[1])
+            z = float(coordinates[2])
+
+            sumX += x 
+            sumY += y 
+            sumZ += z 
+
+            num += 1
+
+    meanX = sumX / num
+    meanY = sumY / num
+    meanZ = sumZ / num
+
+    means = np.array([meanX, meanY, meanZ], dtype = np.float64)
+    return means
+
+def stdDev(variance):
+
+    xVar = variance[0]
+    yVar = variance[1]
+    zVar = variance[2]
+
+    xStd = math.sqrt(xVar)
+    yStd = math.sqrt(yVar)
+    zStd = math.sqrt(zVar)
+
+    stdDevs = np.array([xStd, yStd, zStd], dtype = np.float64)
+    return stdDevs
+
+def variance(file, mean):
+
+    forX = 0
+    forY = 0
+    forZ = 0
+    num = 0
+
+    xMean = mean[0]
+    yMean = mean[1]
+    zMean = mean[2]
+
+    header = True
+
+    for line in file:
+
+        if header:
+            if line.strip() == "end_header":
+                header = False
+            continue
+
+        coordinates = line.split()
+        if float(coordinates[0]) == 3:
+            break
+        else:
+            x = float(coordinates[0])
+            y = float(coordinates[1])
+            z = float(coordinates[2])
+
+            tempX = xMean - x 
+            tempY = yMean - y 
+            tempZ = zMean - z 
+
+            squaredX = tempX ** 2
+            squaredY = tempY ** 2
+            squaredZ = tempZ ** 2
+
+            forX += squaredX
+            forY += squaredY
+            forZ += squaredZ 
+
+            num += 1
+
+    varX = forX / num 
+    varY = forY / num 
+    varZ = forZ / num 
+
+    variance = np.array([varX, varY, varZ], dtype = np.float64)
+    return variance
+
 def savePDB(file):
 
     with open(file, 'r') as source, open('1GCN.X', 'w') as destination:
@@ -194,6 +294,7 @@ def pusherman1(file, subMatrix):
 
 # function calls
 
+# Data Matrix
 # Stanford bunny, extract x, y, z coordinates from bun_zipper.ply file, point location within a base + offset specified by user
 # place data into a (3, n) numpy matrix -> first row-x, second row-y, third row-z / first col-p1, second col-p2, ..., n col-p(n)
 jon_the_bunny = readFile("bun_zipper.ply")
@@ -207,6 +308,22 @@ billy_the_glucagon = readFile("1GCN.pdb")
 savePDB("1GCN.pdb")
 grabbing_billys_ATOMS = getATOM(billy_the_glucagon, 99, 5, "1GCN.pdb")
 printPDB(grabbing_billys_ATOMS)
+
+# Mean Normalization
+# finding the mean of a point cloud by adding up all of the x coordinates (x1 + x2 + x3 + ... + x(n)), y coordinates (y1 + y2 + ... y(n)), and z coordinates (z1 + z2 + ... z(n)) ...
+# divide each sum by the total number of x, y, z triples in the point cloud
+# calculate the variance from a point cloud by subtracting each x, y, z coordinate by their corresponding mean, squaring this value, adding all corresponding component values up, and dividing by the total number of coordinates
+angry_jon = meanBunny(jon_the_bunny)
+jons_variance = variance(jon_the_bunny, angry_jon)
+jon_likes_to_deviate = stdDev(jons_variance)
+print("jon the bunny is a peculiar little fellow, his mean is:", angry_jon)
+print("jon's variance is:", jons_variance)
+print("jon's standard deviation is:", jon_likes_to_deviate)
+
+
+
+
+
 
 
 
