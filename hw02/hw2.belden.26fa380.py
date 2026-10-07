@@ -1,5 +1,7 @@
 import numpy as np 
 import math
+import random
+import time
 
 def readFile(file):
     try:
@@ -255,6 +257,144 @@ def variance(file, mean):
     variance = np.array([varX, varY, varZ], dtype = np.float64)
     return variance
 
+def matMul(A, B):
+
+    rowsA = 0
+    for a in A[:, 0]:
+        rowsA += 1
+
+    colsB = 0
+    for b in B[0, :]:
+        colsB += 1
+
+    colsA = 0
+    for a in A[0, :]:
+        colsA += 1
+    
+    rowsB = 0
+    for b in B[:, 0]:
+        rowsB += 1
+
+    if colsA == rowsB:
+        C = np.zeros((rowsA, colsB), dtype = np.float64)
+    else:
+        print("error: to be able to matrix multiply; columns of A and rows of B must equal, unable to proceed")
+        return None
+
+    # n is which row of A working with
+    for n in range(len(A)):
+        # m is which column of B working with
+        for m in range(len(B[0, :])):
+            sum = 0
+
+            for i in range(len(A[n, :])):
+                sum += A[n, i] * B[i, m]
+           
+            C[n, m] = sum
+    
+    return C 
+
+def npMatmul(A, B):
+
+    C = np.matmul(A, B)
+    return C
+
+# create a function that takes a point cloud and calculates a matrix that transforms the point cloud into a normalized form 
+# move the point cloud so its center is at the origin, scale it so its size is normalized
+def movePointCloud_Normalize(file, theMeans, size):
+
+    # a matrix that represents the transform towards the origin 
+    transform = np.array([
+        [1, 0, 0, -theMeans[0]],
+        [0, 1, 0, -theMeans[1]],
+        [0, 0, 1, -theMeans[2]],
+        [0, 0, 0, 1]
+    ])
+
+    points = np.zeros((4, size), dtype = np.float64)
+    num = 0
+
+    header = True
+
+    for line in file:
+
+        if header:
+            if line.strip() == "end_header":
+                header = False
+            continue
+
+        coordinates = line.split()
+        if float(coordinates[0]) == 3:
+            break
+        else:
+            x = float(coordinates[0])
+            y = float(coordinates[1])
+            z = float(coordinates[2])
+
+            points[0, num] = x
+            points[1, num] = y
+            points[2, num] = z
+            points[3, num] = 1
+
+            num += 1
+                
+    movingPoints = matMul(transform, points)
+
+    with open("mean_normalization.X", "w") as dest:
+        for col in (movingPoints.T):
+            dest.write(f"{col[0]} {col[1]} {col[2]}\n")
+
+    return transform
+
+def compareAndContrast():
+
+    A = np.random.rand(32, 32)
+    B = np.random.rand(64, 64)
+    C = np.random.rand(128, 128)
+    D = np.random.rand(512, 512)
+
+    start1a = time.time()
+    matMul(A, A)
+    end1a = time.time()
+    print("My 32x32 matmul time:", end1a - start1a, "sec")
+
+    start1b = time.time()
+    npMatmul(A, A)
+    end1b = time.time()
+    print("NumPy 32x32 matmul time:", end1b - start1b, "sec")
+
+    start2a = time.time()
+    matMul(B, B)
+    end2a = time.time()
+    print("My 64x64 matmul time:", end2a - start2a, "sec")
+
+    start2b = time.time()
+    npMatmul(B, B)
+    end2b = time.time()
+    print("NumPy 64x64 matmul time:", end2b - start2b, "sec")
+
+    start3a = time.time()
+    matMul(C, C)
+    end3a = time.time()
+    print("My 128x128 matmul time:", end3a - start3a, "sec")
+
+    start3b = time.time()
+    npMatmul(C, C)
+    end3b = time.time()
+    print("NumPy 128x128 matmul time:", end3b - start3b, "sec")
+
+    start4a = time.time()
+    matMul(D, D)
+    end4a = time.time()
+    print("My 512x512 matmul time:", end4a - start4a, "sec")
+
+    start4b = time.time()
+    npMatmul(D, D)
+    end4b = time.time()
+    print("NumPy 512x512 matmul time:", end4b - start4b, "sec")
+
+    return None
+
 def savePDB(file):
 
     with open(file, 'r') as source, open('1GCN.X', 'w') as destination:
@@ -297,9 +437,9 @@ def pusherman1(file, subMatrix):
 # Data Matrix
 # Stanford bunny, extract x, y, z coordinates from bun_zipper.ply file, point location within a base + offset specified by user
 # place data into a (3, n) numpy matrix -> first row-x, second row-y, third row-z / first col-p1, second col-p2, ..., n col-p(n)
-jon_the_bunny = readFile("bun_zipper.ply")
-extracting_jon_poor_jon = getPoints(jon_the_bunny, 30000, 5)
-pusherman1("bunny.X", extracting_jon_poor_jon)
+jeff_the_bunny = readFile("bun_zipper.ply")
+extracting_jeff_poor_jon = getPoints(jeff_the_bunny, 30000, 5)
+pusherman1("bunny.X", extracting_jeff_poor_jon)
 
 # Write a function to read the atoms of a PDB format into a column-major data matrix,
 # using the ATOM and HETATM lines (lec09)
@@ -313,12 +453,21 @@ printPDB(grabbing_billys_ATOMS)
 # finding the mean of a point cloud by adding up all of the x coordinates (x1 + x2 + x3 + ... + x(n)), y coordinates (y1 + y2 + ... y(n)), and z coordinates (z1 + z2 + ... z(n)) ...
 # divide each sum by the total number of x, y, z triples in the point cloud
 # calculate the variance from a point cloud by subtracting each x, y, z coordinate by their corresponding mean, squaring this value, adding all corresponding component values up, and dividing by the total number of coordinates
-angry_jon = meanBunny(jon_the_bunny)
-jons_variance = variance(jon_the_bunny, angry_jon)
-jon_likes_to_deviate = stdDev(jons_variance)
-print("jon the bunny is a peculiar little fellow, his mean is:", angry_jon)
-print("jon's variance is:", jons_variance)
-print("jon's standard deviation is:", jon_likes_to_deviate)
+# mean normalize the points by moving the 'center' of the point cloud to the origin ... this is done by transforming the points by a 4x4 matrix consisting of the means of the x, y, and z coordinates
+angry_jeff = meanBunny(jeff_the_bunny)
+jeffs_variance = variance(jeff_the_bunny, angry_jeff)
+jeff_likes_to_deviate = stdDev(jeffs_variance)
+jeff_moves_towards_origin = movePointCloud_Normalize(jeff_the_bunny, angry_jeff, 35947)
+print("jeff the bunny is a peculiar little fellow, his mean is:", angry_jeff)
+print("jeff's variance is:", jeffs_variance)
+print("jeff's standard deviation is:", jeff_likes_to_deviate)
+print("jeff is on the move towards the origin, how is he going to move?:\n", jeff_moves_towards_origin)
+print("\n")
+
+# Matrix Multiplication
+# the tortoise and the hare
+compareAndContrast()
+print("\n")
 
 
 
