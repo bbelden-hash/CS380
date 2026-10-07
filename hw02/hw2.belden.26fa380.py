@@ -281,12 +281,19 @@ def matMul(A, B):
         print("error: to be able to matrix multiply; columns of A and rows of B must equal, unable to proceed")
         return None
 
-    # n is which row of A working with
+    # n is which row of A we are currently in, for a 3x2 ... (A[n, :])
+    #[ 1 2 ] n = 0
+    #[ 3 4 ] n = 1
+    #[ 7 8 ] n = 3
+    # ...
     for n in range(len(A)):
-        # m is which column of B working with
+        # m is a row of B working with, B[0, :] =
+        # [ 5 6 ] is has len(2), so m = 0, 1
         for m in range(len(B[0, :])):
             sum = 0
 
+            # for 3x2, len(2), ...
+            # allows for traveral down row for A and down column for B with corresponding row and column numbers
             for i in range(len(A[n, :])):
                 sum += A[n, i] * B[i, m]
            
@@ -294,10 +301,16 @@ def matMul(A, B):
     
     return C 
 
-def npMatmul(A, B):
+def npMatmul2(A, B):
 
     C = np.matmul(A, B)
     return C
+
+def npMatmul3(A, B, C):
+
+    D = np.matmul(A, B)
+    E = np.matmul(C, D)
+    return E
 
 # create a function that takes a point cloud and calculates a matrix that transforms the point cloud into a normalized form 
 # move the point cloud so its center is at the origin, scale it so its size is normalized
@@ -359,7 +372,7 @@ def compareAndContrast():
     print("My 32x32 matmul time:", end1a - start1a, "sec")
 
     start1b = time.time()
-    npMatmul(A, A)
+    npMatmul2(A, A)
     end1b = time.time()
     print("NumPy 32x32 matmul time:", end1b - start1b, "sec")
 
@@ -369,7 +382,7 @@ def compareAndContrast():
     print("My 64x64 matmul time:", end2a - start2a, "sec")
 
     start2b = time.time()
-    npMatmul(B, B)
+    npMatmul2(B, B)
     end2b = time.time()
     print("NumPy 64x64 matmul time:", end2b - start2b, "sec")
 
@@ -379,7 +392,7 @@ def compareAndContrast():
     print("My 128x128 matmul time:", end3a - start3a, "sec")
 
     start3b = time.time()
-    npMatmul(C, C)
+    npMatmul2(C, C)
     end3b = time.time()
     print("NumPy 128x128 matmul time:", end3b - start3b, "sec")
 
@@ -389,11 +402,56 @@ def compareAndContrast():
     print("My 512x512 matmul time:", end4a - start4a, "sec")
 
     start4b = time.time()
-    npMatmul(D, D)
+    npMatmul2(D, D)
     end4b = time.time()
     print("NumPy 512x512 matmul time:", end4b - start4b, "sec")
 
     return None
+
+def logFib(F, fibNo):
+
+    # [1 1][F_n  ]     =  [F_n+1] 
+    # [1 0][F_n-1]        [F_n  ]
+    # F_n+1 = F_n + F_n-1
+    #  ^ moves us forward one fibonacci number
+
+    I = np.array([
+        [1, 0],
+        [0, 1]
+    ])
+
+    F_0 = 0
+    F_1 = 1
+
+    currentState = np.array([
+        [F_0], # F_n
+        [F_1]  # F_n-1
+    ])
+
+    # one multiplication of fibTransform and currentState gives [F_2, F_1]^T ... -> we want to move our current state forward one fibonacci position
+    # first output needs to be (F_n + F_n-1) = F_n+1, so row one of transform needs to be [1 1]
+    # second output needs to be F_n, so row two of transform needs to be [1, 0]
+    # exponential multiplcation: 2^16 you could multiple 2 15 times (2*2*2*2*2*2*...) or 2^2 = 4, 4^2 = 16, 16^2 = 256, 256^2 = 2^16 -> sqrt(16) = 4 -> 4 operations, we can do same with the matrices
+    
+    # one multiplication of currentState and fibtransform moves us forward one step, multiply fibtransform twice?
+    # [1 1][1 1] = [2 1] F_3 = 2, F_2 = 1, F_1 = 1 [F_3 F_2]
+    # [1 0][1 0]   [1 1]                           [F_2 F_1]
+
+    # fibTransform^n = [F_n+1 F_n]
+    #                  [F_n F_n-1]
+
+    # fibTransform^8 = [F_9 F_8]
+    #                  [F_8 F_7]
+
+    if fibNo == 0:
+        return I 
+    
+    halfFib = logFib(F, fibNo // 2) # recursive call in which the stack dives deep until the base case is reached and halfFib == I
+
+    if (fibNo % 2) == 0:
+        return npMatmul2(halfFib, halfFib)
+    elif (fibNo % 2) != 0:
+        return npMatmul3(F, halfFib, halfFib)
 
 def savePDB(file):
 
@@ -466,8 +524,23 @@ print("\n")
 
 # Matrix Multiplication
 # the tortoise and the hare
-compareAndContrast()
-print("\n")
+# compareAndContrast()
+# print("\n")
+
+# Logarithmic Fibonacci Solution, this was a process but fun ...
+fibTransform = np.array([
+        [1, 1],
+        [1, 0]
+    ])
+fibNo = 1000
+start = time.time()
+fibMatrix = logFib(fibTransform, fibNo)
+end = time.time()
+fib = fibMatrix[0, 1]
+print("fibonacci logarithmic, F_", fibNo, ":", fib)
+print("Time taken to compute F_", fibNo, "is", end - start, "sec")
+
+
 
 
 
