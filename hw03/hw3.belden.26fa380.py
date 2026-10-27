@@ -2,6 +2,85 @@ import numpy as np
 import sympy as sp
 import time
 
+def dot(V_1, V_2):
+
+    sum = 0
+    for i in range(len(V_1)):
+        product = V_1[i] * V_2[i]
+        sum += product
+
+    return sum
+
+def build_vector_w_distance(P_1, P_2):
+
+    v = np.zeros(3)
+    for i in range(len(P_1)):
+        coordinate = P_2[i] - P_1[i]
+        v[i] = coordinate
+
+    return v
+
+def my_interesting_build_planar_cloud(P: np.ndarray, N: np.ndarray, numOfPoints):
+    """ 
+        build a random planar point cloud 
+        probability of randoming finding {numOfPoints} valid points on plane is highly unlikely with this technique,
+        although it is technically mathematically sound
+    """
+
+    vectorsOnPlane = 0
+    while vectorsOnPlane != 2:
+        testP = np.random.uniform(-10, 10, size = 3)
+
+        testV = build_vector_w_distance(P, testP)
+        orthoWithDot = dot(N, testV)
+
+        if abs(orthoWithDot) < 1e-6:
+            if vectorsOnPlane == 0:
+                v_1 = np.array([testV[0], testV[1], testV[2]])
+                vectorsOnPlane += 1
+            elif vectorsOnPlane == 1:
+                v_2 = np.array([testV[0], testV[1], testV[2]])
+                vectorsOnPlane += 1
+
+    pointsOnPlane = np.zeros((numOfPoints, 3))
+    for i in range(numOfPoints):
+
+        # random coefficients
+        a = np.random.uniform(-1, 1)
+        b = np.random.uniform(-1, 1)
+
+        # construct a point on the plane
+        p = P + a * v_1 + b * v_2
+
+        pointsOnPlane[i, 0] = p[0]
+        pointsOnPlane[i, 1] = p[1]
+        pointsOnPlane[i, 2] = p[2]
+
+        time.sleep(.1)
+
+    return pointsOnPlane
+
+def create_ply(file, planePoints):
+
+    vertex = planePoints.shape[0]
+
+    with open(file, "w") as ply:
+        ply.write("ply\n")
+        ply.write("format ascii 1.0\n")
+        ply.write(f"element vertex {vertex}\n")
+        ply.write("property float x\n")
+        ply.write("property float y\n")
+        ply.write("property float z\n")
+        ply.write("element face 0\n")
+        ply.write("end_header\n")
+
+        for i in range(vertex):
+            x = planePoints[i, 0]
+            y = planePoints[i, 1]
+            z = planePoints[i, 2]
+
+            ply.write(f"{x} {y} {z}\n")
+
 def read_file(file):
 
     try:
@@ -29,18 +108,15 @@ def get_mean(file):
             continue
 
         coordinates = line.split()
-        if float(coordinates[0]) == 3:
-            break
-        else:
-            x = float(coordinates[0])
-            y = float(coordinates[1])
-            z = float(coordinates[2])
+        x = float(coordinates[0])
+        y = float(coordinates[1])
+        z = float(coordinates[2])
 
-            sumX += x 
-            sumY += y 
-            sumZ += z
+        sumX += x 
+        sumY += y 
+        sumZ += z
 
-            num += 1
+        num += 1
     
     meanX = sumX / num
     meanY = sumY / num
@@ -74,19 +150,16 @@ def move_point_cloud(file, theMeans, size):
             continue
 
         coordinates = line.split()
-        if float(coordinates[0]) == 3:
-            break
-        else:
-            x = float(coordinates[0])
-            y = float(coordinates[1])
-            z = float(coordinates[2])
+        x = float(coordinates[0])
+        y = float(coordinates[1])
+        z = float(coordinates[2])
 
-            points[0, num] = x
-            points[1, num] = y
-            points[2, num] = z
-            points[3, num] = 1
+        points[0, num] = x
+        points[1, num] = y
+        points[2, num] = z
+        points[3, num] = 1
 
-            num += 1
+        num += 1
                 
     centered = np.matmul(transform, points)
     return centered
@@ -207,8 +280,14 @@ def spectralPCA(filename):
     #return mean and normal
     return mean, normal
 
-# PCA w/ spectral analysis
-meanSpectral, normalSpectral = spectralPCA(<filename>)
+# PCA w/ spectral analysis w/ random planar cloud
+P = np.array([1, 2, 3])
+N = np.array([0, 0, 1])
+planarPointCloud = my_interesting_build_planar_cloud(P, N, 100)
+create_ply("planar_plane.ply", planarPointCloud)
+meanSpectral, normalSpectral = spectralPCA("planar_plane.ply")
+
+
 
 
 
