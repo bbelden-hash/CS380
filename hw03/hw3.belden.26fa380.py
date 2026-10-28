@@ -2,6 +2,8 @@ import numpy as np
 import sympy as sp
 import time
 
+# shape of data matrix is 3 x numOfPoints -> rows = features, axiss, variables / columns = observations, points
+
 def dot(V_1, V_2):
 
     sum = 0
@@ -344,19 +346,59 @@ def spectralPCA(filename, size):
     #return mean and normal
     return mean, normal
 
-# PCA w/ spectral analysis w/ random planar cloud
+def SVD_PCA(filename, size):
+
+    # read the file
+    myFile = read_cloud(filename)
+
+    if myFile is None:
+        raise FileNotFoundError(f"error: could not read file for SVD, file: {filename}\n")
+
+    # get the mean
+    mean = get_mean(myFile)
+
+    # move point cloud to origin
+    cloudToOrigin = move_point_cloud(myFile, mean, size)
+
+    # extract only x, y, z
+    data = cloudToOrigin[:3, :]
+
+    # perform SVD directly on the centered coordinates
+    U, singularValues, V_T = np.linalg.svd(data, full_matrices=True)
+
+    # principal directions are the columns of U -> smallest singular value corresponds to the direction of least variance
+    normal = U[:, -1]
+
+    return mean, normal
+
+# -------------------------------- FUNCTION CALLS --------------------------------------------------------------------
 P = np.array([4.0, 2.0, 0.0])
 N = np.array([7.5, 2.1, 9.4])
-numOfPoints = 100
+numOfPoints = 200
 
 start1 = time.perf_counter()
 planarPointCloud1 = build_planar_cloud(P, N, numOfPoints)
 end1 = time.perf_counter()
 
 create_ply("planar_plane.ply", planarPointCloud1)
-meanSpectral, normalSpectral = spectralPCA("planar_plane.ply", 100)
-print("mean from spectral w/ coplanar test:", meanSpectral)
-print("normal from spectral w/ coplanar test:", normalSpectral, "\n")
+
+mean1, normal1 = spectralPCA("planar_plane.ply", numOfPoints)
+mean2, normal2 = SVD_PCA("planar_plane.ply", numOfPoints)
+
+print("best fitting plane from spectral w/ coplanar test:", mean1, normal1)
+print("best fitting plane from SVD w/ coplanar test:", mean2, normal2)
+
+if np.allclose(mean1, mean2):
+    print("spectral and PCA outputs are good :|")
+if np.allclose(abs(normal1), abs(normal2)):
+    print("spectral and SVD outputs are good :|\n")
+
+# ground-truth, test on data known -> see frogPCA.pdf -> mean = (1.685, .2666, 2.216666), normal = (.85249, .49173, .17737)
+frog_mean1, frog_normal1 = spectralPCA("frog_data.py", 6)
+frog_mean2, frog_normal2 = SVD_PCA("frog_data.py", 6)
+
+print("best fitting plane from data known (frog_data) w/ spectral:", frog_mean1, frog_normal1)
+print("best fitting plane from data known (frog_data) w/ SVD:", frog_mean2, frog_normal2, "\n")
 
 try:
     start2 = time.perf_counter()
@@ -366,7 +408,7 @@ try:
     print("generating planar point cloud w/ random until dot = 0 between norm and vector:", end2 - start2, "sec\n")
 
 except TimeoutError as error:
-    print("random method failed", error)
+    print("random until dot = 0 method failed", error)
 
 print("generating planar point cloud w/ numpy and cross:", end1 - start1, "sec\n")
 
