@@ -378,4 +378,7 @@ In your code, you already know the original plane.
 But imagine you didn't know its normal vector and only had the 100 XYZ points. 
 PCA lets you estimate the plane from those points alone.
 
+In short: you center the points at the origin to calculate the normal 
+then use the saved mean to locate the reconstructed plane in its original position
+
 """

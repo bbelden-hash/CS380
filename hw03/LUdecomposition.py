@@ -3,18 +3,19 @@ import numpy as np
 # all examples for 3x3
 def main(A: np.ndarray):
    """
+    A = LU
     L = ones on the diagonal w/ multiplicites under it
     U = like a row echelon form without 1s on the diagonal
 
     got to be square, QR for rectangles
     """
     if (A.shape[0] != A.shape[1]):
-        print("error: LU decomp - got to be square")
+        print("error: LU decomp - got to be square\n")
         return -1
 
     n = A.shape[0]
 
-    L = np.array((n, n))
+    L = np.zeros((n, n))
     for i in range(len(A)):
         for j in range(len(A)):
             if i == j:
@@ -42,17 +43,20 @@ def main(A: np.ndarray):
 
     for col in range(num_cols):
         for row in range(num_rows):
+            if col == (num_cols - 1):
+                return L, U 
+
             if row == col:
                 # pivot = U[row, col]
 
                 i = row
                 k = row + 1
+                pivot_row = U[i] 
                 while k < U.shape[0]:
 
                     L[k][col] = U[k][col] / U[col][col]
                     multiplier = L[k][col]
 
-                    pivot_row = U[i]
                     m_row = pivot_row * multiplier
                     new_row = U[k] - m_row
 
@@ -63,7 +67,8 @@ def main(A: np.ndarray):
 
     return L, U
 
-# idk if this works yet but would be cool
+# idk if this works yet but would be cool -> I think the logic is sound
+# see LUDecomp.pdf for visual example w/ iterations
 
                 
 
